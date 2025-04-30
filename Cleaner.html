@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>C2C Cleaner Matching Platform</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+            .hidden { display: none; }
+            .section { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+            label { display: block; margin-top: 10px; }
+            input, select, button { margin-top: 5px; padding: 8px; width: 100%; box-sizing: border-box; }
+            button { background-color: #007BFF; color: white; border: none; cursor: pointer; }
+            button:hover { background-color: #0056b3; }
+            h1, h2, h3 { color: #333; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #e9ecef; }
+            .fav-btn { margin-top: 5px; background-color: #28a745; }
+        </style>
+    </head>
+    <body>
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="hidden">
+            <h2>Dashboard</h2>
+            <div id="dashboardContent"></div>
+            <button onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Cleaner Panel -->
+        <div id="cleanerSection" class="section hidden">
+            <h3>Cleaner Functions</h3>
+            <form onsubmit="addService(event)">
+                <label>Service Title: <input type="text" id="serviceTitle"></label>
+                <label>Description: <input type="text" id="serviceDescription"></label>
+                <label>Category:
+                    <select id="serviceCategory">
+                        <option value="General Cleaning">General Cleaning</option>
+                        <option value="Deep Cleaning">Deep Cleaning</option>
+                        <option value="Laundry">Laundry</option>
+                        <option value="Ironing">Ironing</option>
+                        <option value="Disinfection">Disinfection</option>
+                    </select>
+                </label>
+                <label>Availability Schedule: <input type="text" id="serviceSchedule" placeholder="e.g., Weekdays 9am-12pm"></label>
+                <button type="submit">Add Service</button>
+            </form>
+            <h4>My Services</h4>
+            <ul id="serviceList"></ul>
+        </div>
+        <script src="script.js"></script>
+        <script>
+            window.addEventListener("DOMContentLoaded", () => {
+                const user = sessionStorage.getItem("currentUser");
+                if (!user) {
+                  alert("Not authenticated. Redirecting to login page.");
+                  window.location.href = "index.html";
+                }
+            });
+        </script>          
+    </body>
+</html>

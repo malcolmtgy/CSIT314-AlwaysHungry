@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>C2C Cleaner Matching Platform</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+            .hidden { display: none; }
+            .section { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+            label { display: block; margin-top: 10px; }
+            input, select, button { margin-top: 5px; padding: 8px; width: 100%; box-sizing: border-box; }
+            button { background-color: #007BFF; color: white; border: none; cursor: pointer; }
+            button:hover { background-color: #0056b3; }
+            h1, h2, h3 { color: #333; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #e9ecef; }
+            .fav-btn { margin-top: 5px; background-color: #28a745; }
+        </style>
+    </head>
+    <body>
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="hidden">
+            <h2>Dashboard</h2>
+            <div id="dashboardContent"></div>
+            <button onclick="logout()">Logout</button>
+        </div>
+    
+        <!-- User Admin Panel -->
+        <div id="adminSection" class="section hidden">
+            <h3>User Admin Functions</h3>
+            <form onsubmit="saveUser(event)">
+                <label>New User Username: <input type="text" id="newUsername"></label>
+                <label>Password: <input type="password" id="newPassword"></label>
+                <label>Role:
+                    <select id="newUserRole">
+                        <option value="userAdmin">User Admin</option>
+                        <option value="cleaner">Cleaner</option>
+                        <option value="homeOwner">Home Owner</option>
+                        <option value="platformManager">Platform Manager</option>
+                    </select>
+                </label>
+                <button type="submit">Create User</button>
+            </form>
+    
+            <h4>Search Users</h4>
+            <input type="text" id="searchUser" oninput="renderUserTable()" placeholder="Search by username or role">
+    
+            <h4>User List</h4>
+            <table id="userTable">
+                <thead>
+                    <tr><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <script src="script.js"></script>
+        <script>
+            window.addEventListener("DOMContentLoaded", () => {
+                const user = sessionStorage.getItem("currentUser");
+                if (!user) {
+                  alert("Not authenticated. Redirecting to login page.");
+                  window.location.href = "index.html";
+                }
+            });            
+        </script>          
+    </body>
+</html>

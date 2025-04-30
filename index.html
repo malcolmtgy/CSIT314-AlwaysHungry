@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>C2C Cleaner Matching Platform</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+            .hidden { display: none; }
+            .section { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+            label { display: block; margin-top: 10px; }
+            input, select, button { margin-top: 5px; padding: 8px; width: 100%; box-sizing: border-box; }
+            button { background-color: #007BFF; color: white; border: none; cursor: pointer; }
+            button:hover { background-color: #0056b3; }
+            h1, h2, h3 { color: #333; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background-color: #e9ecef; }
+            .fav-btn { margin-top: 5px; background-color: #28a745; }
+        </style>
+    </head>
+    <body>
+        <h1>C2C Freelance Cleaner Matching Platform</h1>
+    
+        <!-- Login Section -->
+        <div class="section" id="loginSection">
+            <button onclick="showCreateAccount()">Create Account</button>
+            <h2>Login</h2>
+            <label>User Role:
+                <select id="userRole">
+                    <option value="userAdmin">User Admin</option>
+                    <option value="cleaner">Cleaner</option>
+                    <option value="homeOwner">Home Owner</option>
+                    <option value="platformManager">Platform Manager</option>
+                </select>
+            </label>
+            <label>Username: <input type="text" id="username"></label>
+            <label>Password: <input type="password" id="password"></label>
+            <button onclick="login()">Login</button>
+        </div>
+    
+        <!-- Create Account Section -->
+        <div id="createAccountSection" class="section hidden">
+            <h2>Create Account</h2>
+            <form onsubmit="createAccount(event)">
+                <label>Username: <input type="text" id="registerUsername"></label>
+                <label>Password: <input type="password" id="registerPassword"></label>
+                <label>Role:
+                    <select id="registerRole">
+                        <option value="cleaner">Cleaner</option>
+                        <option value="homeOwner">Home Owner</option>
+                    </select>
+                </label>
+                <button type="submit">Register</button>
+            </form>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="hidden">
+            <h2>Dashboard</h2>
+            <div id="dashboardContent"></div>
+            <button onclick="logout()">Logout</button>
+        </div>
+    
+        
+        <script src="script.js"></script>
+    </body>
+</html>
