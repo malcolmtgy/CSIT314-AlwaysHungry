@@ -1,7 +1,7 @@
 // script.js – Full MongoDB integration with sessionStorage
 
 //const API_BASE = "http://localhost:3000";
-const API_BASE = "http://192.168.18.15:3000"; // Replace with your server's LAN IP
+const API_BASE = "http://192.168.18.6:3000"; // Replace with your server's LAN IP
 let currentUser = null;
 
 // Try loading session user on page load
@@ -21,13 +21,20 @@ async function showCreateAccount() {
 async function createAccount(e) {
     e.preventDefault();
     const username = document.getElementById("registerUsername").value;
+    const email = document.getElementById("registerEmail").value;
     const password = document.getElementById("registerPassword").value;
     const role = document.getElementById("registerRole").value;
+    const address = role === "homeowner" ? document.getElementById("registerAddress").value : "";
+
+    if (!username || !email || !password || (role === "homeowner" && !address)) {
+        alert("Please fill in all required fields.");
+        return;
+    }
 
     const res = await fetch(`${API_BASE}/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role })
+        body: JSON.stringify({ username, password, role, email, address })
     });
 
     if (res.ok) {
@@ -38,6 +45,11 @@ async function createAccount(e) {
         const msg = await res.json();
         alert(msg.message);
     }
+}
+
+function toggleAddressField() {
+    const role = document.getElementById("registerRole").value;
+    document.getElementById("addressField").classList.toggle("hidden", role !== "homeowner");
 }
 
 async function login() {
@@ -59,7 +71,7 @@ async function login() {
             window.location.href = "UserAdmin.html";
         } else if (currentUser.role === "cleaner") {
             window.location.href = "Cleaner.html";
-        } else if (currentUser.role === "homeOwner") {
+        } else if (currentUser.role === "homeowner") {
             window.location.href = "HomeOwner.html";
         } else if (currentUser.role === "platformManager") {
             window.location.href = "PlatformManager.html";
@@ -67,7 +79,8 @@ async function login() {
             alert("Unknown role");
         }
     } else {
-        alert("Invalid credentials or role");
+        const msg = await res.json();
+        alert(msg.message || "Invalid credentials or role");
     }
 }
 
@@ -77,7 +90,124 @@ function logout() {
     window.location.href = "index.html";
 }
 
+async function showProfilePage() {
+    const res = await fetch(`${API_BASE}/users/${currentUser._id}`);
+    if (!res.ok) {
+        alert("Failed to load profile.");
+        return;
+    }
+    const user = await res.json();
+
+    document.body.innerHTML = `
+        <div class="section" style="max-width: 600px; margin: 40px auto;">
+            <h2>Edit My Profile</h2>
+            <form onsubmit="updateProfile(event)">
+                <input type="hidden" id="profileUserId" value="${user._id}" />
+                <label>Email: <input type="email" id="profileEmail" value="${user.email}" required></label><br>
+                <label>Name: <input type="text" id="profileName" value="${user.name || ''}"></label><br>
+                ${user.role === 'homeowner' ? `<label>Address: <input type="text" id="profileAddress" value="${user.address || ''}"></label><br>` : ''}
+                <button type="submit">Save Changes</button>
+                <button type="button" onclick="location.reload()">Cancel</button>
+            </form>
+        </div>
+    `;
+}
+
+async function showUserEditPage(userId) {
+    const res = await fetch(`${API_BASE}/users/${userId}`);
+    if (!res.ok) {
+        alert("Failed to load user profile.");
+        return;
+    }
+    const user = await res.json();
+    document.body.innerHTML = `
+        <div class="section" style="max-width: 600px; margin: 40px auto;">
+            <h2>Edit User Profile (${user.username})</h2>
+            <form onsubmit="updateUserProfile(event)">
+                <input type="hidden" id="editUserId" value="${user._id}" />
+                <label>Email: <input type="email" id="editEmail" value="${user.email}" required></label><br>
+                <label>Name: <input type="text" id="editName" value="${user.name || ''}"></label><br>
+                ${user.role === 'homeowner' ? `<label>Address: <input type="text" id="editAddress" value="${user.address || ''}"></label><br>` : ''}
+                <button type="submit">Save Changes</button>
+                <button type="button" onclick="location.reload()">Cancel</button>
+            </form>
+        </div>
+    `;
+}
+
+async function showUserViewPage(userId) {
+    const res = await fetch(`${API_BASE}/users/${userId}`);
+    if (!res.ok) {
+        alert("Failed to load user profile.");
+        return;
+    }
+    const user = await res.json();
+    document.body.innerHTML = `
+        <div class="section" style="max-width: 600px; margin: 40px auto;">
+            <h2>View User Profile (${user.username})</h2>
+            <p><strong>Email:</strong> ${user.email || 'N/A'}</p>
+            <p><strong>Name:</strong> ${user.name || 'N/A'}</p>
+            ${user.role === 'homeowner' ? `<p><strong>Address:</strong> ${user.address || 'N/A'}</p>` : ''}
+            <button type="button" onclick="location.reload()">Back</button>
+        </div>
+    `;
+}
+
+async function updateUserProfile(e) {
+    e.preventDefault();
+    const id = document.getElementById("editUserId").value;
+    const data = {
+        email: document.getElementById("editEmail").value,
+        name: document.getElementById("editName").value,
+        address: document.getElementById("editAddress")?.value
+    };
+
+    const res = await fetch(`${API_BASE}/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+        alert("User profile updated!");
+        location.reload();
+    } else {
+        alert("Failed to update user profile.");
+    }
+}
+
+async function updateProfile(e) {
+    e.preventDefault();
+
+    const id = document.getElementById("profileUserId").value;
+    const data = {
+        email: document.getElementById("profileEmail").value,
+        name: document.getElementById("profileName").value,
+        address: document.getElementById("profileAddress")?.value
+    };
+
+    const res = await fetch(`${API_BASE}/users/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+        alert("Profile updated!");
+        sessionStorage.setItem("currentUser", JSON.stringify(await res.json()));
+        location.reload();
+    } else {
+        alert("Failed to update profile.");
+    }
+}
+
 function showPanelByRole(role) {
+    const profileBtn = document.createElement("button");
+    profileBtn.id = "profileButton";
+    profileBtn.textContent = "My Profile";
+    profileBtn.onclick = showProfilePage;
+    document.body.appendChild(profileBtn);
+
     document.getElementById("dashboard")?.classList?.remove("hidden");
     if (role === "userAdmin") {
         document.getElementById("adminSection")?.classList?.remove("hidden");
@@ -85,7 +215,7 @@ function showPanelByRole(role) {
     } else if (role === "cleaner") {
         document.getElementById("cleanerSection")?.classList?.remove("hidden");
         renderServiceList();
-    } else if (role === "homeOwner") {
+    } else if (role === "homeowner") {
         document.getElementById("homeOwnerSection")?.classList?.remove("hidden");
         renderAvailableServices();
         renderShortlist();
@@ -98,18 +228,39 @@ function showPanelByRole(role) {
 // USERS
 async function saveUser(e) {
     e.preventDefault();
-    const username = document.getElementById("newUsername").value;
-    const password = document.getElementById("newPassword").value;
-    const role = document.getElementById("newUserRole").value;
+    const usernameInput = document.getElementById("registerUsername");
+    const emailInput = document.getElementById("registerEmail");
+    const passwordInput = document.getElementById("registerPassword");
+    const roleInput = document.getElementById("registerRole");
+    const addressInput = document.getElementById("registerAddress");
+
+    const username = usernameInput.value;
+    const email = emailInput.value;
+    const password = passwordInput.value;
+    const role = roleInput.value;
+    const address = role === "homeowner" ? addressInput?.value : "";
 
     const res = await fetch(`${API_BASE}/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role })
+        body: JSON.stringify({ username, password, email, role, address })
     });
-    if (res.ok) renderUserTable();
-    else alert((await res.json()).message);
+
+    if (res.ok) {
+        alert("User created.");
+        renderUserTable();
+
+        // ✅ Clear form fields
+        usernameInput.value = "";
+        emailInput.value = "";
+        passwordInput.value = "";
+        roleInput.selectedIndex = 0;
+        if (addressInput) addressInput.value = "";
+    } else {
+        alert((await res.json()).message);
+    }
 }
+
 
 async function renderUserTable() {
     const res = await fetch(`${API_BASE}/users`);
@@ -121,7 +272,7 @@ async function renderUserTable() {
     users.filter(u => u.username.toLowerCase().includes(search) || u.role.toLowerCase().includes(search)).forEach(u => {
         const row = document.createElement("tr");
         row.innerHTML = `
-            <td>${u.username}</td>
+            <td><a href="#" onclick="showUserViewPage('${u._id}')">${u.username}</a></td>
             <td>${u.role}</td>
             <td>
                 <select onchange="updateStatus('${u._id}', this.value)">
@@ -130,7 +281,9 @@ async function renderUserTable() {
                     <option value="suspended" ${u.status === 'suspended' ? 'selected' : ''}>Suspended</option>
                 </select>
             </td>
-            <td><button class="danger-btn" onclick="deleteUser('${u._id}')">Delete</button></td>`;
+            <td>
+                <button class="danger-btn" onclick="deleteUser('${u._id}')">Delete</button>
+            </td>`;
         tbody.appendChild(row);
     });
 }
