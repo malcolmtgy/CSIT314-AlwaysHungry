@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Manage Categories</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 0; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px 30px; background-color: #222; color: white;
+    }
+    .logo {
+      font-size: 24px; font-weight: bold; color: #00e676;
+      pointer-events: none; cursor: default;
+    }
+    header a { color: white; text-decoration: none; margin-left: 20px; }
+
+    main { padding: 20px; max-width: 600px; margin: auto; }
+    input { padding: 8px; margin-bottom: 10px; width: 100%; }
+    button { padding: 8px 15px; }
+    ul { list-style: none; padding: 0; }
+    li { margin-bottom: 10px; }
+    .category-item { display: flex; justify-content: space-between; align-items: center; }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="logo">🧹 AH Manager Panel</span>
+    <nav>
+      <a href="/managerCategories.html">Categories</a>
+      <a href="/managerReports.html">Reports</a>
+      <a href="/profile.html">Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Manage Service Categories</h2>
+
+    <div>
+      <input type="text" id="categoryInput" placeholder="Enter new category (e.g. moveout)" />
+      <button onclick="addCategory()">Add Category</button>
+      <p id="response"></p>
+    </div>
+
+    <h3>Current Categories:</h3>
+    <ul id="categoryList"></ul>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('authToken');
+    if (!token) window.location.href = '/login.html';
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login.html';
+    }
+
+    async function loadCategories() {
+      const res = await fetch('/api/categories', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+
+      const list = document.getElementById('categoryList');
+      list.innerHTML = '';
+
+      data.categories.forEach(cat => {
+        const li = document.createElement('li');
+        li.className = 'category-item';
+        li.innerHTML = `
+          <span>${cat._id}</span>
+          <button onclick="deleteCategory('${cat._id}')">❌ Delete</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    async function addCategory() {
+      const name = document.getElementById('categoryInput').value.trim().toLowerCase();
+      const response = document.getElementById('response');
+
+      if (!name) {
+        response.innerText = "❌ Please enter a category name.";
+        response.className = "error";
+        return;
+      }
+
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ name })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        response.innerText = "✅ Category added.";
+        response.className = "success";
+        document.getElementById('categoryInput').value = '';
+        loadCategories();
+      } else {
+        response.innerText = "❌ " + (data.error || 'Could not add category');
+        response.className = "error";
+      }
+    }
+
+    async function deleteCategory(id) {
+      const confirmDelete = confirm(`Are you sure you want to delete category "${id}"?`);
+      if (!confirmDelete) return;
+
+      const res = await fetch(`/api/categories/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (res.ok) {
+        loadCategories();
+      } else {
+        alert('❌ Could not delete category');
+      }
+    }
+
+    loadCategories();
+  </script>
+</body>
+</html>

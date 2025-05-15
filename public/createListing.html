@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Service Listing</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 0; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px 30px; background-color: #222; color: white;
+    }
+    .logo {
+      font-size: 24px; font-weight: bold; color: #00e676;
+      pointer-events: none; cursor: default;
+    }
+    header a { color: white; text-decoration: none; margin-left: 20px; }
+    main { padding: 20px; }
+    input, textarea, select {
+      display: block; margin-bottom: 10px; padding: 8px; width: 300px;
+    }
+    button { padding: 10px 15px; }
+    #response { margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <span class="logo">🧹 AH Home Cleaners</span>
+    <nav>
+      <a href="/createListing.html">Create Listing</a>
+      <a href="/editListings.html">Edit Listings</a>
+      <a href="/cleanerViewFavouriteAndBookedListings.html">Favourites/Bookings</a>
+      <a href="/profile.html">Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Create a Cleaning Service Listing</h2>
+    <form id="listingForm">
+      <input type="text" id="title" placeholder="Service Title" required />
+      <textarea id="description" placeholder="Description" required></textarea>
+      <input type="number" id="price" placeholder="Price ($)" required />
+      <select id="category"></select>
+      <button type="submit">Create Listing</button>
+    </form>
+    <p id="response"></p>
+
+    <h2>All Homeowner Requests</h2>
+    <ul id="allRequests" style="padding-left: 20px;"></ul>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('authToken');
+    if (!token) window.location.href = "/login.html";
+
+    // Load categories from backend
+    async function populateCategories() {
+      try {
+        const res = await fetch('/api/categories', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const select = document.getElementById('category');
+        select.innerHTML = '';
+
+        data.categories.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat._id;
+          opt.textContent = cat._id.charAt(0).toUpperCase() + cat._id.slice(1);
+          select.appendChild(opt);
+        });
+      } catch {
+        alert('❌ Failed to load categories.');
+      }
+    }
+
+    populateCategories();
+
+    const form = document.getElementById('listingForm');
+    const responseMsg = document.getElementById('response');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const listing = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        price: document.getElementById('price').value,
+        category: document.getElementById('category').value
+      };
+
+      try {
+        const res = await fetch('/api/services/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify(listing)
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          responseMsg.innerText = '✅ Listing created successfully!';
+        } else {
+          responseMsg.innerText = `❌ ${data.error}`;
+        }
+      } catch (err) {
+        responseMsg.innerText = '❌ Error submitting listing.';
+      }
+    });
+
+    async function loadAllRequests() {
+      try {
+        const res = await fetch('/api/all-requests', {
+          headers: { Authorization: 'Bearer ' + token }
+        });
+        const data = await res.json();
+
+        const list = document.getElementById('allRequests');
+        list.innerHTML = '';
+
+        if (!data.requests || data.requests.length === 0) {
+          list.innerHTML = '<li>No requests available.</li>';
+          return;
+        }
+
+        data.requests.forEach(req => {
+          const li = document.createElement('li');
+          li.textContent = `📝 ${req.message} — by ${req.userId?.name || 'Unknown'} on ${new Date(req.createdAt).toLocaleString()}`;
+          list.appendChild(li);
+        });
+      } catch (err) {
+        console.error('Failed to load requests:', err);
+        document.getElementById('allRequests').innerHTML = '<li>❌ Error loading requests.</li>';
+      }
+    }
+    loadAllRequests();
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login.html';
+    }
+  </script>
+</body>
+</html>

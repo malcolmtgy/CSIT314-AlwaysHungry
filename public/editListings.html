@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Listings</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 0; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px 30px; background-color: #222; color: white;
+    }
+    header a { color: white; text-decoration: none; margin-left: 20px; }
+    .logo { font-size: 24px; font-weight: bold; color: #00e676; text-decoration: none; margin-left: 0; pointer-events: none; cursor: default; }
+
+    main { padding: 20px; }
+    .listing {
+      display: flex;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 10px;
+      border: 1px solid #ccc;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+    }
+    .listing input,
+    .listing textarea,
+    .listing select {
+      font-size: 14px;
+      padding: 6px;
+    }
+    .listing input[type="text"],
+    .listing textarea,
+    .listing input[type="number"],
+    .listing select {
+      width: 180px;
+    }
+    .listing button {
+      padding: 6px 10px;
+      font-size: 14px;
+    }
+    .listing textarea {
+      height: 40px;
+      resize: vertical;
+    }
+    #listings p {
+      margin-top: 4px;
+      font-size: 14px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="logo">🧹 AH Home Cleaners</span>
+    <nav>
+        <a href="/createListing.html">Create Listing</a>
+        <a href="/editListings.html">Edit Listings</a>
+        <a href="/cleanerViewFavouriteAndBookedListings.html">Favourites/Bookings</a>
+        <a href="/profile.html">Profile</a>
+        <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>My Service Listings</h2>
+    <div id="listings"></div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      window.location.href = "/login.html";
+    }
+
+    const listingsDiv = document.getElementById('listings');
+    let categoryList = [];
+
+    async function loadCategories() {
+      const res = await fetch('/api/categories', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      categoryList = data.categories.map(c => c._id);
+    }
+
+    async function loadListings() {
+      listingsDiv.innerHTML = "Loading...";
+      try {
+        await loadCategories();
+
+        const res = await fetch('/api/services/mine', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        const data = await res.json();
+        listingsDiv.innerHTML = "";
+
+        if (res.ok && data.services.length > 0) {
+          data.services.forEach(service => {
+            const el = document.createElement('div');
+            el.className = 'listing';
+
+            // Dynamically generate category options
+            const categoryOptions = categoryList.map(cat =>
+              `<option value="${cat}" ${service.category === cat ? 'selected' : ''}>
+                ${cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </option>`).join('');
+
+            el.innerHTML = `
+              <input type="text" value="${service.title}" id="title-${service._id}" />
+              <textarea id="description-${service._id}">${service.description}</textarea>
+              <input type="number" value="${service.price}" id="price-${service._id}" />
+              <select id="category-${service._id}">
+                ${categoryOptions}
+              </select>
+              <button onclick="updateListing('${service._id}')">Update</button>
+              <button onclick="deleteListing('${service._id}')">Delete</button>
+              <p id="msg-${service._id}"></p>
+            `;
+
+            listingsDiv.appendChild(el);
+          });
+        } else {
+          listingsDiv.innerHTML = "<p>No listings yet.</p>";
+        }
+      } catch (err) {
+        listingsDiv.innerText = '❌ Error loading listings.';
+      }
+    }
+
+    async function updateListing(id) {
+      const title = document.getElementById(`title-${id}`).value;
+      const description = document.getElementById(`description-${id}`).value;
+      const price = document.getElementById(`price-${id}`).value;
+      const category = document.getElementById(`category-${id}`).value;
+      const msg = document.getElementById(`msg-${id}`);
+
+      try {
+        const res = await fetch(`/api/services/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ title, description, price, category })
+        });
+
+        const data = await res.json();
+        msg.innerText = res.ok ? '✅ Updated!' : `❌ ${data.error}`;
+      } catch {
+        msg.innerText = '❌ Update failed.';
+      }
+    }
+
+    async function deleteListing(id) {
+      if (!confirm("Delete this listing?")) return;
+
+      try {
+        const res = await fetch(`/api/services/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (res.ok) {
+          alert('Listing deleted!');
+          loadListings();
+        } else {
+          const data = await res.json();
+          alert('Delete failed: ' + data.error);
+        }
+      } catch {
+        alert('Delete request failed.');
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login.html';
+    }
+
+    loadListings();
+  </script>
+</body>
+</html>

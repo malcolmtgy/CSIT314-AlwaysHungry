@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Manager Reports</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 0; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px 30px; background-color: #222; color: white;
+    }
+    .logo {
+      font-size: 24px; font-weight: bold; color: #00e676;
+      pointer-events: none; cursor: default;
+    }
+    header a { color: white; text-decoration: none; margin-left: 20px; }
+
+    main { padding: 20px; max-width: 1000px; margin: auto; }
+
+    select, button {
+      padding: 8px 12px;
+      margin-right: 10px;
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f4f4f4;
+    }
+
+    #response {
+      margin-top: 20px;
+      font-weight: bold;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <span class="logo">🧹 AH Manager Panel</span>
+    <nav>
+      <a href="/managerCategories.html">Categories</a>
+      <a href="/managerReports.html">Reports</a>
+      <a href="/profile.html">Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Service Booking Reports</h2>
+
+    <label for="reportType">Select Report Type:</label>
+    <select id="reportType">
+      <option value="daily">Daily</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+    </select>
+    <button onclick="generateReport()">Generate Report</button>
+
+    <p id="response"></p>
+
+    <table id="reportTable" style="display: none;">
+      <thead>
+        <tr>
+          <th>Period</th>
+          <th>Service Title</th>
+          <th>Cleaner Name</th>
+          <th>Total Bookings</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('authToken');
+    if (!token) window.location.href = '/login.html';
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login.html';
+    }
+
+    async function generateReport() {
+      const type = document.getElementById('reportType').value;
+      const response = document.getElementById('response');
+      const table = document.getElementById('reportTable');
+      const tbody = table.querySelector('tbody');
+
+      response.innerText = '';
+      table.style.display = 'none';
+      tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+
+      try {
+        const res = await fetch(`/api/reports/${type}`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          response.innerText = '❌ ' + (data.error || 'Error generating report');
+          tbody.innerHTML = '';
+          return;
+        }
+
+        if (data.report.length === 0) {
+          response.innerText = 'No data available for this report.';
+          tbody.innerHTML = '';
+          return;
+        }
+
+        // Build table
+        tbody.innerHTML = '';
+        data.report.forEach(row => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${row.period}</td>
+            <td>${row.serviceTitle}</td>
+            <td>${row.cleanerName}</td>
+            <td>${row.totalBookings}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        table.style.display = 'table';
+
+      } catch (err) {
+        response.innerText = '❌ Failed to fetch report.';
+        console.error(err);
+        tbody.innerHTML = '';
+      }
+    }
+  </script>
+</body>
+</html>

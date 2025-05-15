@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>User Registration</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 0; }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 30px;
+      background-color: #222;
+      color: white;
+    }
+
+    header a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #00e676;
+      text-decoration: none;
+      margin-left: 0;
+      pointer-events: none;
+      cursor: default;
+    }
+
+    main {
+      padding: 20px;
+    }
+
+    input, select {
+      display: block;
+      margin-bottom: 10px;
+      padding: 8px;
+      width: 300px;
+    }
+
+    button {
+      padding: 10px 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <span class="logo">🧹 AH Home Cleaners</span>
+    <nav>
+      <a href="/adminCreate.html">Create Account</a>
+      <a href="/adminpage.html">Manage Users</a>
+      <a href="/profile.html">Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <h2>Register New User</h2>
+    <form id="registerForm">
+      <input type="text" id="name" placeholder="Name" required />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <select id="role">
+        <option value="admin">Admin</option>
+        <option value="manager">PlatformManager</option>
+        <option value="homeowner">HomeOwner</option>
+        <option value="cleaner">Cleaner</option>
+      </select>
+      <button type="submit">Register</button>
+    </form>
+
+    <p id="response"></p>
+  </main>
+
+  <script>
+    const form = document.getElementById('registerForm');
+    const responseMsg = document.getElementById('response');
+
+    function home() {
+      const storedUser = sessionStorage.getItem("currentUser");
+      if (!storedUser) {
+        alert("You are not logged in.");
+        return;
+      }
+
+      const user = JSON.parse(storedUser);
+      const role = user.role;
+
+      switch (role) {
+        case "admin":
+          window.location.href = "/adminpage.html";
+          break;
+        case "homeowner":
+          window.location.href = "/listings.html";
+          break;
+        case "cleaner":
+          window.location.href = "/createListing.html";
+          break;
+        default:
+          window.location.href = "/";
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const userData = {
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+        role: document.getElementById('role').value,
+      };
+
+      try {
+        const res = await fetch('/api/users/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          responseMsg.innerText = `✅ Success: ${data.message}`;
+        } else {
+          responseMsg.innerText = `❌ Error: ${data.error}`;
+        }
+      } catch (err) {
+        responseMsg.innerText = '❌ Error sending request';
+      }
+    });
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login.html';
+    }
+  </script>
+</body>
+</html>
+

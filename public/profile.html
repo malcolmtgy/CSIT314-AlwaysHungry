@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Profile</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 0; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px 30px; background-color: #222; color: white;
+    }
+    .logo {
+      font-size: 24px; font-weight: bold; color: #00e676;
+      pointer-events: none; cursor: default;
+    }
+    header a { color: white; text-decoration: none; margin-left: 20px; }
+
+    main { padding: 20px; max-width: 600px; margin: auto; }
+    section { margin-bottom: 30px; }
+    input { padding: 8px; margin-bottom: 10px; width: 100%; }
+    button { padding: 10px 15px; }
+    #message { margin-top: 10px; color: green; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="logo">🧹 AH Home Cleaners</span>
+    <nav>
+      <a href="#" onclick="home()">Home</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>My Profile</h2>
+    <section>
+      <p><strong>Name:</strong> <span id="nameDisplay"></span></p>
+      <p><strong>Email:</strong> <span id="emailDisplay"></span></p>
+      <p><strong>Role:</strong> <span id="roleDisplay"></span></p>
+    </section>
+
+    <section>
+      <h3>Update Name</h3>
+      <input type="text" id="newName" placeholder="Enter new name" />
+      <button onclick="updateName()">Update Name</button>
+      <p id="nameMsg"></p>
+    </section>
+
+    <section>
+      <h3>Change Password</h3>
+      <input type="password" id="currentPassword" placeholder="Current password" />
+      <input type="password" id="newPassword" placeholder="New password" />
+      <button onclick="updatePassword()">Change Password</button>
+      <p id="passMsg"></p>
+    </section>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('authToken');
+    if (!token) window.location.href = "/login.html";
+
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const userId = payload.id;
+    const userRole = payload.role;
+
+    function home() {
+      const storedUser = sessionStorage.getItem("currentUser");
+      if (!storedUser) {
+        alert("You are not logged in.");
+        return;
+      }
+
+      const user = JSON.parse(storedUser);
+      const role = user.role;
+
+      switch (role) {
+        case "admin":
+          window.location.href = "/adminpage.html";
+          break;
+        case "homeowner":
+          window.location.href = "/listings.html";
+          break;
+        case "cleaner":
+          window.location.href = "/createListing.html";
+          break;
+        default:
+          window.location.href = "/";
+      }
+    }
+
+    document.getElementById('roleDisplay').innerText = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+
+    async function loadProfile() {
+      const res = await fetch('/api/users/me', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      document.getElementById('nameDisplay').innerText = data.name;
+      document.getElementById('emailDisplay').innerText = data.email;
+    }
+
+    async function updateName() {
+      const newName = document.getElementById('newName').value;
+      const msg = document.getElementById('nameMsg');
+
+      const res = await fetch('/api/users/update-name', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ name: newName })
+      });
+
+      const data = await res.json();
+      msg.innerText = res.ok ? '✅ Name updated successfully' : `❌ ${data.error}`;
+      if (res.ok) loadProfile();
+    }
+
+    async function updatePassword() {
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const msg = document.getElementById('passMsg');
+
+      const res = await fetch('/api/users/update-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      const data = await res.json();
+      msg.innerText = res.ok ? '✅ Password updated successfully' : `❌ ${data.error}`;
+    }
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login.html';
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

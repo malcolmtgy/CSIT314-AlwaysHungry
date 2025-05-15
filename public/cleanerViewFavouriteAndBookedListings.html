@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cleaner Favourites & Bookings</title>
+  <style>
+    body { font-family: Arial; margin: 0; padding: 0; }
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px 30px; background-color: #222; color: white;
+    }
+    .logo {
+      font-size: 24px; font-weight: bold; color: #00e676;
+      pointer-events: none; cursor: default;
+    }
+    header a { color: white; text-decoration: none; margin-left: 20px; }
+    main { padding: 20px; }
+    h2 { margin-top: 40px; }
+    .listing {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <span class="logo">🧹 AH Home Cleaners</span>
+    <nav>
+      <a href="/createListing.html">Create Listing</a>
+      <a href="/editListings.html">Edit Listings</a>
+      <a href="/cleanerViewFavouriteAndBookedListings.html">Favourites/Bookings</a>
+      <a href="/profile.html">Profile</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Favourites (Your Listings)</h2>
+    <div id="favouriteCounts"></div>
+
+    <h2>My Booked Listings</h2>
+    <div class="filters" style="margin-bottom: 20px;">
+      <input type="text" id="searchTitle" placeholder="Search by Title" />
+      <select id="filterCategory">
+        <option value="">All Categories</option>
+      </select>
+      <label style="margin-left: 10px;">From: <input type="date" id="filterDateStart" /></label>
+      <label style="margin-left: 10px;">To: <input type="date" id="filterDateEnd" /></label>
+      <button onclick="applyBookingFilters()">Apply Filters</button>
+    </div>
+
+    <div id="bookings"></div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('authToken');
+    if (!token) window.location.href = '/login.html';
+
+    function logout() {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login.html';
+    }
+
+    async function loadCategories() {
+      try {
+        const res = await fetch('/api/categories', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        const categorySelect = document.getElementById('filterCategory');
+        categorySelect.innerHTML = '<option value="">All Categories</option>';
+        data.categories.forEach(cat => {
+          const opt = document.createElement('option');
+          opt.value = cat._id;
+          opt.textContent = cat._id.charAt(0).toUpperCase() + cat._id.slice(1);
+          categorySelect.appendChild(opt);
+        });
+      } catch {
+        console.warn('❌ Failed to load dynamic category filter.');
+      }
+    }
+
+    async function loadFavouritesWithCounts() {
+      const res = await fetch('/api/services/mine/favourite-counts', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      const container = document.getElementById('favouriteCounts');
+      container.innerHTML = '';
+
+      if (data.listings.length === 0) {
+        container.innerHTML = "<p>You haven't posted any listings yet.</p>";
+        return;
+      }
+
+      data.listings.forEach(service => {
+        const el = document.createElement('div');
+        el.className = 'listing';
+        el.innerHTML = `
+          <strong>${service.title}</strong> - ${service.category} - $${service.price}<br/>
+          <p>${service.description}</p>
+          <p><strong>Number of Favourites:</strong> ${service.favouriteCount}</p>
+        `;
+        container.appendChild(el);
+      });
+    }
+
+    let allBookings = [];
+
+    async function loadCleanerBookings() {
+      const res = await fetch('/api/services/mine/bookings', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      allBookings = data.bookings;
+      renderBookings(allBookings);
+    }
+
+    function renderBookings(bookings) {
+      const container = document.getElementById('bookings');
+      container.innerHTML = '';
+
+      if (bookings.length === 0) {
+        container.innerHTML = "<p>No matching bookings found.</p>";
+        return;
+      }
+
+      bookings.forEach(entry => {
+        const service = entry.serviceId;
+        const homeowner = entry.homeownerId;
+        const date = new Date(entry.date).toLocaleDateString();
+        const el = document.createElement('div');
+        el.className = 'listing';
+        el.innerHTML = `
+          <strong>${service.title}</strong> - ${service.category} - $${service.price}<br/>
+          <p>${service.description}</p>
+          <p><strong>Booked by:</strong> ${homeowner?.name || 'Unknown'} (${homeowner?.email || 'no email'})</p>
+          <p><strong>Booking Date:</strong> ${date}</p>
+        `;
+        container.appendChild(el);
+      });
+    }
+
+    function applyBookingFilters() {
+      const titleQuery = document.getElementById('searchTitle').value.toLowerCase();
+      const categoryFilter = document.getElementById('filterCategory').value;
+      const dateStart = document.getElementById('filterDateStart').value;
+      const dateEnd = document.getElementById('filterDateEnd').value;
+
+      const filtered = allBookings.filter(entry => {
+        const service = entry.serviceId;
+        const bookingDate = new Date(entry.date);
+
+        const matchTitle = !titleQuery || service.title.toLowerCase().includes(titleQuery);
+        const matchCategory = !categoryFilter || service.category === categoryFilter;
+        const matchDateStart = !dateStart || bookingDate >= new Date(dateStart);
+        const matchDateEnd = !dateEnd || bookingDate <= new Date(dateEnd);
+
+        return matchTitle && matchCategory && matchDateStart && matchDateEnd;
+      });
+
+      renderBookings(filtered);
+    }
+
+    // Run everything
+    loadCategories();
+    loadFavouritesWithCounts();
+    loadCleanerBookings();
+  </script>
+</body>
+</html>
