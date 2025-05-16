@@ -1,6 +1,5 @@
 const Service = require('../models/Service');
 const User = require('../models/User');
-const Booking = require('../models/Booking');
 
 // Save favourite
 exports.addToFavourites = async (req, res) => {

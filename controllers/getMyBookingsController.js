@@ -1,12 +1,10 @@
-const Service = require('../models/Service');
-const User = require('../models/User');
 const Booking = require('../models/Booking');
 
-// Get my bookings
 exports.getMyBookings = async (req, res) => {
-    const bookings = await Booking.find({ homeownerId: req.user.id }).populate({
-        path: 'serviceId',
-        populate: { path: 'cleanerId', select: 'name' }
-    });
+  try {
+    const bookings = await Booking.getByUser(req.user.id);
     res.json({ bookings });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

@@ -1,9 +1,10 @@
-const Service = require('../models/Service');
-const User = require('../models/User');
 const Booking = require('../models/Booking');
 
-// Cancel booking
 exports.cancelBooking = async (req, res) => {
-    await Booking.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Booking cancelled' });
+  try {
+    const result = await Booking.cancel(req.params.id);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

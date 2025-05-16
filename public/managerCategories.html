@@ -73,7 +73,10 @@
         li.className = 'category-item';
         li.innerHTML = `
           <span>${cat._id}</span>
-          <button onclick="deleteCategory('${cat._id}')">❌ Delete</button>
+          <div style="display: flex; gap: 10px;">
+            <button onclick="updateInput('${cat._id}')">✏️ Update</button>
+            <button onclick="deleteCategory('${cat._id}')">❌ Delete</button>
+          </div>
         `;
         list.appendChild(li);
       });
@@ -123,6 +126,32 @@
         loadCategories();
       } else {
         alert('❌ Could not delete category');
+      }
+    }
+
+    function updateInput(oldName) {
+      const newName = prompt(`Enter a new name for category "${oldName}":`).trim().toLowerCase();
+      if (!newName || newName === oldName) return;
+
+      updateCategory(oldName, newName);
+    }
+
+    async function updateCategory(oldName, newName) {
+      const res = await fetch(`/api/categories/${oldName}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ newName })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        loadCategories();
+        alert(`✅ Category renamed to "${newName}"`);
+      } else {
+        alert("❌ " + (data.error || 'Could not update category'));
       }
     }
 
