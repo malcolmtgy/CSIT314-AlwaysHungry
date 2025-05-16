@@ -117,13 +117,12 @@
           return;
         }
 
-        if (data.report.length === 0) {
+        if (!data.report || data.report.length === 0) {
           response.innerText = 'No data available for this report.';
           tbody.innerHTML = '';
           return;
         }
 
-        // Build table
         tbody.innerHTML = '';
         data.report.forEach(row => {
           const tr = document.createElement('tr');

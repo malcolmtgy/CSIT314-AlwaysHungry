@@ -39,6 +39,15 @@
 
   <main>
     <h2>Favourites (Your Listings)</h2>
+    <div style="margin-bottom: 15px;">
+      <label for="favouriteFilter">Filter:</label>
+      <select id="favouriteFilter" onchange="applyFavouriteFilter()">
+        <option value="all">Show All</option>
+        <option value="withFavourites">With Favourites</option>
+        <option value="withoutFavourites">Without Favourites</option>
+      </select>
+    </div>
+
     <div id="favouriteCounts"></div>
 
     <h2>My Booked Listings</h2>
@@ -102,9 +111,27 @@
         el.innerHTML = `
           <strong>${service.title}</strong> - ${service.category} - $${service.price}<br/>
           <p>${service.description}</p>
-          <p><strong>Number of Favourites:</strong> ${service.favouriteCount}</p>
+          <p class="favourite-count"><strong>Number of Favourites:</strong> ${service.favouriteCount}</p>
         `;
         container.appendChild(el);
+      });
+    }
+
+    function applyFavouriteFilter() {
+      const filter = document.getElementById('favouriteFilter').value;
+      const allListings = document.querySelectorAll('#favouriteCounts .listing');
+
+      allListings.forEach(listing => {
+        const favCountText = listing.querySelector('.favourite-count')?.textContent || '0';
+        const count = parseInt(favCountText.replace(/[^\d]/g, ''), 10);
+
+        if (filter === 'withFavourites' && count === 0) {
+          listing.style.display = 'none';
+        } else if (filter === 'withoutFavourites' && count > 0) {
+          listing.style.display = 'none';
+        } else {
+          listing.style.display = 'block';
+        }
       });
     }
 
@@ -168,6 +195,7 @@
     // Run everything
     loadCategories();
     loadFavouritesWithCounts();
+    applyFavouriteFilter()
     loadCleanerBookings();
   </script>
 </body>

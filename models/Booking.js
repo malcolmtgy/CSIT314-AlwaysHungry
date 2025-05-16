@@ -40,18 +40,35 @@ bookingSchema.statics.getForCleanerListings = async function(cleanerId, ServiceM
 
 // ✅ Get booking report by period
 bookingSchema.statics.getReportBy = async function(type) {
-  let groupId;
+  let groupId, projectPeriod;
+
   if (type === 'daily') {
     groupId = { $dateToString: { format: "%Y-%m-%d", date: "$date" } };
-  } else if (type === 'weekly') {
-    groupId = { $dateToString: { format: "%Y-%m-%d", date: "$date" } }; // convert to week later
+    projectPeriod = "$_id.period";
   } else if (type === 'monthly') {
     groupId = { $dateToString: { format: "%Y-%m", date: "$date" } };
+    projectPeriod = "$_id.period";
+  } else if (type === 'weekly') {
+    groupId = {
+      week: { $isoWeek: "$date" },
+      year: { $isoWeekYear: "$date" },
+      serviceTitle: "$service.title",
+      cleanerName: "$cleaner.name"
+    };
+    projectPeriod = {
+      $concat: [
+        "Week ",
+        { $toString: "$_id.week" },
+        " (",
+        { $toString: "$_id.year" },
+        ")"
+      ]
+    };
   } else {
     throw new Error('Invalid report type');
   }
 
-  const results = await this.aggregate([
+  return await this.aggregate([
     {
       $lookup: {
         from: 'services',
@@ -72,18 +89,25 @@ bookingSchema.statics.getReportBy = async function(type) {
     { $unwind: "$cleaner" },
     {
       $group: {
-        _id: {
-          period: groupId,
-          serviceTitle: "$service.title",
-          cleanerName: "$cleaner.name"
-        },
+        _id: type === 'weekly'
+          ? {
+              week: { $isoWeek: "$date" },
+              year: { $isoWeekYear: "$date" },
+              serviceTitle: "$service.title",
+              cleanerName: "$cleaner.name"
+            }
+          : {
+              period: groupId,
+              serviceTitle: "$service.title",
+              cleanerName: "$cleaner.name"
+            },
         totalBookings: { $sum: 1 }
       }
     },
     {
       $project: {
         _id: 0,
-        period: "$_id.period",
+        period: projectPeriod,
         serviceTitle: "$_id.serviceTitle",
         cleanerName: "$_id.cleanerName",
         totalBookings: 1
@@ -91,8 +115,6 @@ bookingSchema.statics.getReportBy = async function(type) {
     },
     { $sort: { period: -1 } }
   ]);
-
-  return results;
 };
 
 module.exports = mongoose.model('Booking', bookingSchema);

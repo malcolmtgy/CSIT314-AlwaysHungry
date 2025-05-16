@@ -1,29 +1,18 @@
 const Booking = require('../models/Booking');
 
 class getReportController {
-  getWeekRange(dateStr) {
-    const date = new Date(dateStr);
-    const day = date.getUTCDay(); // Sunday = 0
-    const diffToMonday = day === 0 ? -6 : 1 - day;
-    const monday = new Date(date);
-    monday.setUTCDate(date.getUTCDate() + diffToMonday);
-    const sunday = new Date(monday);
-    sunday.setUTCDate(monday.getUTCDate() + 6);
-    const format = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    return `${format(monday)} – ${format(sunday)}`;
-  }
-
   async handle(req, res) {
     try {
       const { type } = req.params;
+
+      // Get already-formatted report directly from Booking model
       const report = await Booking.getReportBy(type);
-      if (type === 'weekly') {
-        report.forEach(r => {
-          r.period = this.getWeekRange(r.period);
-        });
-      }
+
+      // No need to process weekly periods — it's pre-formatted from aggregation
       res.json({ report });
+
     } catch (err) {
+      console.error('Report generation error:', err);
       res.status(400).json({ error: err.message });
     }
   }
